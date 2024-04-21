@@ -29,31 +29,40 @@ class BCIDataset(Dataset):
     def __len__(self):
         return self.data.shape[0]
 
-def plot_train_acc(train_acc_list, epochs, model):
+def plot_train_acc(list, epochs, model):
     # TODO plot training accuracy
     ep = range(1, epochs+1)
-    plt.plot(ep, train_acc_list, marker='.', linestyle='-')
-    plt.title(f"{model}_ReLU")
+    plt.plot(ep, list[0], marker='.', linestyle='-')
+    plt.plot(ep, list[1], marker='.', linestyle='-')
+    plt.plot(ep, list[2], marker='.', linestyle='-')
+    plt.title(f"{model} training acc")
+    plt.legend(['ELU', 'ReLU', 'LeakyReLU'])
     plt.xlabel('Epoch')
     plt.ylabel('Train Accuracy')
     plt.savefig(f"visualization/train_acc.png")
     plt.clf()
 
-def plot_train_loss(train_loss_list, epochs, model):
+def plot_train_loss(list, epochs, model):
     # TODO plot training loss
     ep = range(1, epochs+1)
-    plt.plot(ep, train_loss_list, marker='.', linestyle='-')
-    plt.title(f"{model}_ReLU")
+    plt.plot(ep, list[0], marker='.', linestyle='-')
+    plt.plot(ep, list[1], marker='.', linestyle='-')
+    plt.plot(ep, list[2], marker='.', linestyle='-')
+    plt.title(f"{model} training loss")
+    plt.legend(['ELU', 'ReLU', 'LeakyReLU'])
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.savefig(f"visualization/loss.png")
     plt.clf()
 
-def plot_test_acc(test_acc_list, epochs, model):
+def plot_test_acc(list, epochs, model):
     # TODO plot testing loss
     ep = range(1, epochs+1)
-    plt.plot(ep, test_acc_list, marker='.', linestyle='-')
-    plt.title(f"{model}_ReLU")
+    plt.plot(ep, list[0], marker='.', linestyle='-')
+    plt.plot(ep, list[1], marker='.', linestyle='-')
+    plt.plot(ep, list[2], marker='.', linestyle='-')
+    plt.title(f"{model} testing acc")
+    plt.legend(['ELU', 'ReLU', 'LeakyReLU'])
     plt.xlabel('Epoch')
     plt.ylabel('Test Accuracy')
     plt.savefig(f"visualization/test_acc.png")
@@ -137,21 +146,31 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
-    if args.model == "EEGNet":
-        model = EEGNet()
-    elif args.model == "DeepConvNet":
-        model = DeepConvNet()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.0001)
-    print(model)
+    activation = ["ELU", "ReLU", "LeakyReLU"]
+    train_acc_list = []
+    train_loss_list = []
+    test_acc_list = []
+    for act in activation:
+        if args.model == "EEGNet":
+            model = EEGNet(act)
+        elif args.model == "DeepConvNet":
+            model = DeepConvNet(act)
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.0001)
+        print(model)
 
-    model.to(device)
-    criterion.to(device)
+        model.to(device)
+        criterion.to(device)
 
-    train_acc_list, train_loss_list, test_acc_list = train(model, train_loader, criterion, optimizer, args)
-
+        train_acc, train_loss, test_acc = train(model, train_loader, criterion, optimizer, args)
+        train_acc_list.append(train_acc)
+        train_loss_list.append(train_loss)
+        test_acc_list.append(test_acc)
+   
     os.makedirs("visualization", exist_ok=True)
     plot_train_acc(train_acc_list, args.num_epochs, args.model)
     plot_train_loss(train_loss_list, args.num_epochs, args.model)
     plot_test_acc(test_acc_list, args.num_epochs, args.model)
-    print(f"best testing acc: {max(test_acc_list)}")
+    print(f"best testing acc of ELU: {max(test_acc_list[0])}")
+    print(f"best testing acc ReLU: {max(test_acc_list[1])}")
+    print(f"best testing acc LeakyReLU: {max(test_acc_list[2])}")
